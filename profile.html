@@ -50,12 +50,14 @@
         }
 
         addPointBtn.addEventListener("click", async () => {
+          // تحديث النقاط فورًا على الشاشة
+          let currentPoints = parseInt(pointsSpan.textContent);
+          pointsSpan.textContent = currentPoints + 1;
+
+          // تحديث النقاط في Firestore
           await updateDoc(userRef, {
             points: increment(1)
           });
-
-          const updatedSnap = await getDoc(userRef);
-          pointsSpan.textContent = updatedSnap.data().points;
         });
       } else {
         window.location.href = "index.html";
