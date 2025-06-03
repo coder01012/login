@@ -1,22 +1,30 @@
-function signUp() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  auth.createUserWithEmailAndPassword(email, password)
-    .then(() => window.location.href = "welcome.html")
-    .catch(e => alert(e.message));
-}
+// app.js
+import { auth, db } from "./firebase-config.js";
+import { GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
-function signIn() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  auth.signInWithEmailAndPassword(email, password)
-    .then(() => window.location.href = "welcome.html")
-    .catch(e => alert(e.message));
-}
+const googleSignInBtn = document.getElementById("googleSignInBtn");
 
-function signInWithGoogle() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider)
-    .then(() => window.location.href = "welcome.html")
-    .catch(e => alert(e.message));
-}
+googleSignInBtn.addEventListener("click", async () => {
+  const provider = new GoogleAuthProvider();
+
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    const userRef = doc(db, "users", user.uid);
+    const docSnap = await getDoc(userRef);
+
+    if (!docSnap.exists()) {
+      await setDoc(userRef, {
+        email: user.email,
+        name: user.displayName,
+        createdAt: serverTimestamp()
+      });
+    }
+
+    window.location.href = "welcome.html";
+  } catch (error) {
+    alert(error.message);
+  }
+});
