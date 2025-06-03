@@ -1,27 +1,30 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>مرحباً</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 40px 20px;
-    }
-  </style>
+  <title>أهلاً بك</title>
 </head>
 <body>
-  <h2 id="greeting">جاري التحميل...</h2>
+  <h1 id="welcome-text">مرحبًا!</h1>
 
   <script type="module">
-    import { auth } from './firebase-config.js';
-    import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js';
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
 
-    onAuthStateChanged(auth, user => {
+    const firebaseConfig = {
+      apiKey: "AIzaSyDvMLI4QL90kIbjVn_6e02dUIa4K1dt3Ws",
+      authDomain: "login-c8afc.firebaseapp.com",
+      projectId: "login-c8afc",
+      appId: "1:907378152010:web:587c0777c4926b0ba0ccb3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+
+    onAuthStateChanged(auth, (user) => {
       if (user) {
-        document.getElementById("greeting").innerText = `أهلاً يا ${user.email}`;
+        document.getElementById("welcome-text").textContent = `مرحبًا يا ${user.email}`;
       } else {
         window.location.href = "index.html";
       }
