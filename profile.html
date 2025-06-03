@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>الملف الشخصي</title>
+</head>
+<body>
+  <h1>مرحبًا يا <span id="user-email"></span></h1>
+  <p>UID: <span id="user-uid"></span></p>
+  <p>نقاطك: <span id="user-points">0</span></p>
+
+  <button id="add-point">اضغط هنا لكسب نقطة</button>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDvMLI4QL90kIbjVn_6e02dUIa4K1dt3Ws",
+      authDomain: "login-c8afc.firebaseapp.com",
+      projectId: "login-c8afc",
+      appId: "1:907378152010:web:587c0777c4926b0ba0ccb3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore();
+
+    const emailSpan = document.getElementById("user-email");
+    const uidSpan = document.getElementById("user-uid");
+    const pointsSpan = document.getElementById("user-points");
+    const addPointBtn = document.getElementById("add-point");
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        emailSpan.textContent = user.email;
+        uidSpan.textContent = user.uid;
+
+        const userRef = doc(db, "users", user.uid);
+
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+          await setDoc(userRef, { points: 0 });
+          pointsSpan.textContent = "0";
+        } else {
+          pointsSpan.textContent = userSnap.data().points;
+        }
+
+        addPointBtn.addEventListener("click", async () => {
+          await updateDoc(userRef, {
+            points: increment(1)
+          });
+
+          const updatedSnap = await getDoc(userRef);
+          pointsSpan.textContent = updatedSnap.data().points;
+        });
+      } else {
+        window.location.href = "index.html";
+      }
+    });
+  </script>
+</body>
+</html>
