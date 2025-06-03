@@ -35,6 +35,17 @@
   <h1>تسجيل الدخول بجوجل</h1>
   <button id="googleSignInBtn">الدخول باستخدام جوجل</button>
 
-  <script type="module" src="app.js"></script>
+  <script type="module" src="app.js">
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+
+const auth = getAuth();
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // المستخدم مسجل الدخول، تحويله إلى صفحة الترحيب
+    window.location.href = "welcome.html";
+  }
+});
+  </script> 
 </body>
 </html>
