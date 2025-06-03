@@ -1,50 +1,45 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>تسجيل الدخول بجوجل</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 40px 20px;
-      background: #f9f9f9;
-    }
-    button {
-      background-color: #4285F4;
-      color: white;
-      border: none;
-      padding: 15px 25px;
-      font-size: 18px;
-      border-radius: 6px;
-      cursor: pointer;
-      width: 100%;
-      max-width: 300px;
-      margin: 20px auto;
-      display: block;
-      transition: background-color 0.3s ease;
-    }
-    button:hover {
-      background-color: #357ae8;
-    }
-  </style>
+  <title>تسجيل الدخول</title>
 </head>
 <body>
+  <button id="login-btn">تسجيل الدخول بجوجل</button>
 
-  <h1>تسجيل الدخول بجوجل</h1>
-  <button id="googlesingin-but">الدخول باستخدام جوجل</button> 
-  <script type="module" src="app.js">
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
 
-const auth = getAuth();
+    const firebaseConfig = {
+      apiKey: "AIzaSyDvMLI4QL90kIbjVn_6e02dUIa4K1dt3Ws",
+      authDomain: "login-c8afc.firebaseapp.com",
+      projectId: "login-c8afc",
+      appId: "1:907378152010:web:587c0777c4926b0ba0ccb3"
+    };
 
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    // المستخدم مسجل الدخول، تحويله إلى صفحة الترحيب
-    window.location.href = "welcome.html";
-  }
-});
-  </script> 
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const provider = new GoogleAuthProvider();
+
+    // التوجيه التلقائي إذا المستخدم سجل دخول
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        window.location.href = "welcome.html";
+      }
+    });
+
+    // تسجيل الدخول عند الضغط على الزر
+    document.getElementById("login-btn").addEventListener("click", () => {
+      signInWithPopup(auth, provider)
+        .then((result) => {
+          // لا داعي للتوجيه هنا لأن onAuthStateChanged مسؤول عنه
+        })
+        .catch((error) => {
+          console.error("خطأ في تسجيل الدخول:", error);
+        });
+    });
+  </script>
 </body>
 </html>
