@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>تسجيل الدخول</title>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+  <h2>تسجيل الدخول أو إنشاء حساب</h2>
+
+  <input type="email" id="email" placeholder="البريد الإلكتروني"><br>
+  <input type="password" id="password" placeholder="كلمة المرور"><br><br>
+
+  <button onclick="signUp()">إنشاء حساب</button>
+  <button onclick="signIn()">تسجيل الدخول</button>
+  <hr>
+  <button onclick="signInWithGoogle()">الدخول باستخدام جوجل</button>
+
+  <script src="app.js"></script>
+</body>
+</html>
