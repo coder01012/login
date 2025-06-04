@@ -6,110 +6,57 @@
   <title>الملف الشخصي</title>
   <style>
     body {
-      font-family: 'Arial', sans-serif;
+      font-family: sans-serif;
       direction: rtl;
-      text-align: center;
       padding: 20px;
-      background-color: #f5f5f5;
+      background: #f0f0f0;
     }
-
-    h1, h2 {
-      color: #333;
-    }
-
-    p {
-      font-size: 18px;
-      margin: 10px 0;
-    }
-
-    button {
-      padding: 10px 16px;
-      margin: 6px;
-      font-size: 16px;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-
-    #add-point {
-      background-color: #4CAF50;
-      color: white;
-    }
-
-    #add-point:hover {
-      background-color: #45a049;
-    }
-
-    #logout-btn {
-      background-color: #f44336;
-      color: white;
-    }
-
-    #logout-btn:hover {
-      background-color: #d32f2f;
-    }
-
-    .card {
-      background: white;
-      padding: 20px;
-      border-radius: 16px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      max-width: 500px;
-      margin: 20px auto;
-    }
-
-    img {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      margin-bottom: 15px;
-    }
-
-    #emoji-store {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    .emoji-btn {
-      font-size: 24px;
-      padding: 10px;
-      border-radius: 10px;
-      cursor: pointer;
-      color: white;
-    }
-
-    .owned {
-      background-color: #2196F3;
-    }
-
-    .not-owned {
-      background-color: #FFC107;
-    }
+    h1, h2 { color: #333; }
+    button { padding: 8px 16px; margin-top: 8px; cursor: pointer; }
+    .emoji-btn { font-size: 24px; margin: 5px; }
+    .owned { border: 2px solid green; }
+    .profile-emoji { font-size: 48px; margin: 10px 0; }
+    input, textarea, select { padding: 6px; margin-top: 5px; width: 100%; }
+    ul { background: #fff; padding: 10px; border-radius: 8px; list-style: none; }
+    li { margin: 5px 0; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <img id="user-avatar" src="" alt="الصورة الشخصية">
-    <h1>مرحبًا يا <span id="user-name">مستخدم</span></h1>
-    <p>البريد الإلكتروني: <span id="user-email"></span></p>
-    <p>UID: <span id="user-uid"></span></p>
-    <p>نقاطك: <span id="user-points">0</span></p>
 
-    <button id="add-point">اضغط هنا لكسب نقطة</button>
-    <button id="logout-btn">تسجيل الخروج</button>
+  <h1>مرحبًا يا <span id="user-email"></span></h1>
+  <div>الصورة: <span id="profile-emoji" class="profile-emoji"></span></div>
+  <p>UID: <span id="user-uid"></span></p>
+  <p>نقاطك: <span id="user-points">0</span></p>
+  <button id="add-point">اضغط هنا لكسب نقطة</button>
 
-    <h2>🛒 المتجر</h2>
-    <div id="emoji-store"></div>
-  </div>
+  <hr>
+
+  <h2>🛍️ المتجر</h2>
+  <div id="emoji-store"></div>
+
+  <hr>
+
+  <h2>🧑‍🤝‍🧑 أضف صديقًا</h2>
+  <input type="text" id="friend-uid-input" placeholder="ادخل UID الصديق">
+  <button id="add-friend-btn">➕ إضافة صديق</button>
+
+  <h2>👥 قائمة أصدقائك</h2>
+  <ul id="friends-list"></ul>
+
+  <hr>
+
+  <h2>📨 إرسال رسالة</h2>
+  <select id="friend-select"></select>
+  <textarea id="message-input" placeholder="اكتب رسالتك هنا..."></textarea>
+  <button id="send-message-btn">✉️ إرسال</button>
+
+  <h2>📬 رسائلك الواردة</h2>
+  <ul id="inbox"></ul>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, query, where, onSnapshot, Timestamp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDvMLI4QL90kIbjVn_6e02dUIa4K1dt3Ws",
@@ -123,106 +70,180 @@
     const db = getFirestore();
 
     const emailSpan = document.getElementById("user-email");
-    const nameSpan = document.getElementById("user-name");
     const uidSpan = document.getElementById("user-uid");
     const pointsSpan = document.getElementById("user-points");
-    const avatarImg = document.getElementById("user-avatar");
+    const profileEmojiSpan = document.getElementById("profile-emoji");
     const addPointBtn = document.getElementById("add-point");
-    const logoutBtn = document.getElementById("logout-btn");
-    const emojiStore = document.getElementById("emoji-store");
+
+    let user;
 
     const emojis = [
-      { id: "smile", emoji: "😊", cost: 5000}, 
-      { id: "cool", emoji: "😎", cost: 1000000}, 
-      { id: "star", emoji: "⭐", cost: 500}, 
-      { id: "fire", emoji: "🔥", cost: 500000}, 
+      { id: "smile", emoji: "😊", cost: 5 },
+      { id: "cool", emoji: "😎", cost: 10 },
+      { id: "star", emoji: "⭐", cost: 15 },
+      { id: "fire", emoji: "🔥", cost: 20 }
     ];
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) return window.location.href = "index.html";
+    onAuthStateChanged(auth, async (_user) => {
+      if (_user) {
+        user = _user;
+        emailSpan.textContent = user.email;
+        uidSpan.textContent = user.uid;
 
-      emailSpan.textContent = user.email;
-      nameSpan.textContent = user.displayName || "مستخدم";
-      uidSpan.textContent = user.uid;
+        const userRef = doc(db, "users", user.uid);
+        let userSnap = await getDoc(userRef);
 
-      const userRef = doc(db, "users", user.uid);
-      let snap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            email: user.email,
+            name: user.displayName,
+            points: 0,
+            ownedEmojis: [],
+            profileEmoji: "",
+            friends: []
+          });
+          userSnap = await getDoc(userRef);
+        }
 
-      if (!snap.exists()) {
-        await setDoc(userRef, {
-          email: user.email,
-          name: user.displayName,
-          createdAt: new Date(),
-          points: 0,
-          ownedEmojis: [],
-          profileEmoji: null
+        const data = userSnap.data();
+        pointsSpan.textContent = data.points;
+        profileEmojiSpan.textContent = data.profileEmoji || "👤";
+
+        // زر إضافة نقطة
+        addPointBtn.addEventListener("click", async () => {
+          pointsSpan.textContent = parseInt(pointsSpan.textContent) + 1;
+          await updateDoc(userRef, { points: increment(1) });
         });
-        snap = await getDoc(userRef);
-      }
 
-      let data = snap.data();
-      pointsSpan.textContent = data.points || 0;
+        // المتجر
+        const storeDiv = document.getElementById("emoji-store");
+        const owned = data.ownedEmojis || [];
 
-      const owned = data.ownedEmojis || [];
-      let profileEmoji = data.profileEmoji;
-
-      // تعيين صورة البروفايل حسب الإيموجي أو الصورة الأصلية
-      if (profileEmoji) {
-        const found = emojis.find(e => e.id === profileEmoji);
-        if (found) avatarImg.src = `https://emojicdn.elk.sh/${found.emoji}`;
-      } else {
-        avatarImg.src = user.photoURL || "https://via.placeholder.com/80";
-      }
-
-      // زر كسب النقاط
-      addPointBtn.addEventListener("click", async () => {
-        await updateDoc(userRef, { points: increment(1) });
-        let newSnap = await getDoc(userRef);
-        pointsSpan.textContent = newSnap.data().points;
-      });
-
-      // زر تسجيل الخروج
-      logoutBtn.addEventListener("click", async () => {
-        await signOut(auth);
-        window.location.href = "index.html";
-      });
-
-      // رسم المتجر
-      function renderStore() {
-        emojiStore.innerHTML = "";
-        const points = parseInt(pointsSpan.textContent);
-
-        emojis.forEach(({ id, emoji, cost }) => {
-          const ownedEmoji = owned.includes(id);
-          const isActive = profileEmoji === id;
-
+        emojis.forEach(async (item) => {
           const btn = document.createElement("button");
+          btn.textContent = item.emoji + ` (${item.cost} نقطة)`;
           btn.className = "emoji-btn";
-          btn.classList.add(ownedEmoji ? "owned" : "not-owned");
-          btn.textContent = `${emoji} ${ownedEmoji ? (isActive ? "✅ مستخدم" : "تعيين") : `شراء (${cost})`}`;
+          if (owned.includes(item.id)) {
+            btn.classList.add("owned");
+            btn.textContent = `✅ ${item.emoji}`;
+            btn.addEventListener("click", async () => {
+              await updateDoc(userRef, { profileEmoji: item.emoji });
+              profileEmojiSpan.textContent = item.emoji;
+              alert("✅ تم تعيين الإيموجي كصورة بروفايل");
+            });
+          } else {
+            btn.addEventListener("click", async () => {
+              const currentPoints = parseInt(pointsSpan.textContent);
+              if (currentPoints >= item.cost) {
+                await updateDoc(userRef, {
+                  points: currentPoints - item.cost,
+                  ownedEmojis: [...owned, item.id]
+                });
+                alert("✅ تم الشراء! أعد تحميل الصفحة");
+              } else {
+                alert("❌ لا تملك نقاط كافية");
+              }
+            });
+          }
+          storeDiv.appendChild(btn);
+        });
 
-          btn.addEventListener("click", async () => {
-            if (!ownedEmoji) {
-              if (points < cost) return alert("❌ لا توجد نقاط كافية");
-              owned.push(id);
-              await updateDoc(userRef, {
-                points: points - cost,
-                ownedEmojis: owned
-              });
-              pointsSpan.textContent = points - cost;
+        // الأصدقاء
+        const friendInput = document.getElementById("friend-uid-input");
+        const addFriendBtn = document.getElementById("add-friend-btn");
+        const friendsList = document.getElementById("friends-list");
+
+        addFriendBtn.addEventListener("click", async () => {
+          const friendUid = friendInput.value.trim();
+          if (!friendUid || friendUid === user.uid) return alert("❌ UID غير صالح");
+
+          const friendDoc = await getDoc(doc(db, "users", friendUid));
+          if (!friendDoc.exists()) return alert("❌ المستخدم غير موجود");
+
+          const userSnap = await getDoc(userRef);
+          let currentFriends = userSnap.data().friends || [];
+
+          if (currentFriends.includes(friendUid)) return alert("✅ الصديق مضاف بالفعل");
+
+          currentFriends.push(friendUid);
+          await updateDoc(userRef, { friends: currentFriends });
+          alert("✅ تم الإضافة");
+          friendInput.value = "";
+          loadFriends();
+          loadFriendSelect();
+        });
+
+        async function loadFriends() {
+          const userSnap = await getDoc(userRef);
+          const friends = userSnap.data().friends || [];
+          friendsList.innerHTML = "";
+          for (let fid of friends) {
+            const friendSnap = await getDoc(doc(db, "users", fid));
+            if (friendSnap.exists()) {
+              const li = document.createElement("li");
+              li.textContent = `${friendSnap.data().name} (${friendSnap.data().email})`;
+              friendsList.appendChild(li);
             }
+          }
+        }
 
-            await updateDoc(userRef, { profileEmoji: id });
-            avatarImg.src = `https://emojicdn.elk.sh/${emoji}`;
-            profileEmoji = id;
-            renderStore();
+        // إرسال رسالة
+        const messageInput = document.getElementById("message-input");
+        const friendSelect = document.getElementById("friend-select");
+        const sendMessageBtn = document.getElementById("send-message-btn");
+        const inbox = document.getElementById("inbox");
+
+        sendMessageBtn.addEventListener("click", async () => {
+          const to = friendSelect.value;
+          const text = messageInput.value.trim();
+          if (!to || !text) return alert("❌ أدخل رسالة وصديقًا");
+
+          await addDoc(collection(db, "messages"), {
+            from: user.uid,
+            to,
+            text,
+            timestamp: Timestamp.now()
           });
 
-          emojiStore.appendChild(btn);
+          messageInput.value = "";
+          alert("✅ تم إرسال الرسالة");
         });
-      }
 
-      renderStore();
+        async function loadFriendSelect() {
+          const userSnap = await getDoc(userRef);
+          const friends = userSnap.data().friends || [];
+          friendSelect.innerHTML = "";
+          for (let fid of friends) {
+            const friendSnap = await getDoc(doc(db, "users", fid));
+            if (friendSnap.exists()) {
+              const opt = document.createElement("option");
+              opt.value = fid;
+              opt.textContent = friendSnap.data().name;
+              friendSelect.appendChild(opt);
+            }
+          }
+        }
+
+        function loadInbox() {
+          const q = query(collection(db, "messages"), where("to", "==", user.uid));
+          onSnapshot(q, async (snapshot) => {
+            inbox.innerHTML = "";
+            for (let docSnap of snapshot.docs) {
+              const data = docSnap.data();
+              const fromSnap = await getDoc(doc(db, "users", data.from));
+              const li = document.createElement("li");
+              li.textContent = `من ${fromSnap.data().name}: ${data.text}`;
+              inbox.appendChild(li);
+            }
+          });
+        }
+
+        loadFriends();
+        loadFriendSelect();
+        loadInbox();
+      } else {
+        window.location.href = "index.html";
+      }
     });
   </script>
 </body>
