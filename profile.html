@@ -13,7 +13,7 @@
       background-color: #f5f5f5;
     }
 
-    h1 {
+    h1, h2 {
       color: #333;
     }
 
@@ -23,8 +23,8 @@
     }
 
     button {
-      padding: 12px 20px;
-      margin: 10px;
+      padding: 10px 16px;
+      margin: 6px;
       font-size: 16px;
       border: none;
       border-radius: 12px;
@@ -55,7 +55,7 @@
       padding: 20px;
       border-radius: 16px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      max-width: 400px;
+      max-width: 500px;
       margin: 20px auto;
     }
 
@@ -64,6 +64,30 @@
       height: 80px;
       border-radius: 50%;
       margin-bottom: 15px;
+    }
+
+    #emoji-store {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .emoji-btn {
+      font-size: 24px;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      color: white;
+    }
+
+    .owned {
+      background-color: #2196F3;
+    }
+
+    .not-owned {
+      background-color: #FFC107;
     }
   </style>
 </head>
@@ -77,11 +101,14 @@
 
     <button id="add-point">اضغط هنا لكسب نقطة</button>
     <button id="logout-btn">تسجيل الخروج</button>
+
+    <h2>🛒 المتجر</h2>
+    <div id="emoji-store"></div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
     import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -102,45 +129,100 @@
     const avatarImg = document.getElementById("user-avatar");
     const addPointBtn = document.getElementById("add-point");
     const logoutBtn = document.getElementById("logout-btn");
+    const emojiStore = document.getElementById("emoji-store");
+
+    const emojis = [
+      { id: "smile", emoji: "😊", cost: 5 },
+      { id: "cool", emoji: "😎", cost: 7 },
+      { id: "star", emoji: "⭐", cost: 10 },
+      { id: "fire", emoji: "🔥", cost: 12 }
+    ];
 
     onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        emailSpan.textContent = user.email;
-        nameSpan.textContent = user.displayName || "مستخدم";
-        uidSpan.textContent = user.uid;
-        avatarImg.src = user.photoURL || "https://via.placeholder.com/80";
+      if (!user) return window.location.href = "index.html";
 
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
+      emailSpan.textContent = user.email;
+      nameSpan.textContent = user.displayName || "مستخدم";
+      uidSpan.textContent = user.uid;
 
-        if (!userSnap.exists()) {
-          await setDoc(userRef, { points: 0 });
-          pointsSpan.textContent = "0";
-        } else {
-          pointsSpan.textContent = userSnap.data().points;
-        }
+      const userRef = doc(db, "users", user.uid);
+      let snap = await getDoc(userRef);
 
-        addPointBtn.addEventListener("click", async () => {
-          let currentPoints = parseInt(pointsSpan.textContent);
-          pointsSpan.textContent = currentPoints + 1;
-
-          await updateDoc(userRef, {
-            points: increment(1)
-          });
+      if (!snap.exists()) {
+        await setDoc(userRef, {
+          email: user.email,
+          name: user.displayName,
+          createdAt: new Date(),
+          points: 0,
+          ownedEmojis: [],
+          profileEmoji: null
         });
-
-        logoutBtn.addEventListener("click", async () => {
-          try {
-            await auth.signOut();
-            window.location.href = "index.html";
-          } catch (error) {
-            alert("حدث خطأ أثناء تسجيل الخروج: " + error.message);
-          }
-        });
-
-      } else {
-        window.location.href = "index.html";
+        snap = await getDoc(userRef);
       }
+
+      let data = snap.data();
+      pointsSpan.textContent = data.points || 0;
+
+      const owned = data.ownedEmojis || [];
+      let profileEmoji = data.profileEmoji;
+
+      // تعيين صورة البروفايل حسب الإيموجي أو الصورة الأصلية
+      if (profileEmoji) {
+        const found = emojis.find(e => e.id === profileEmoji);
+        if (found) avatarImg.src = `https://emojicdn.elk.sh/${found.emoji}`;
+      } else {
+        avatarImg.src = user.photoURL || "https://via.placeholder.com/80";
+      }
+
+      // زر كسب النقاط
+      addPointBtn.addEventListener("click", async () => {
+        await updateDoc(userRef, { points: increment(1) });
+        let newSnap = await getDoc(userRef);
+        pointsSpan.textContent = newSnap.data().points;
+      });
+
+      // زر تسجيل الخروج
+      logoutBtn.addEventListener("click", async () => {
+        await signOut(auth);
+        window.location.href = "index.html";
+      });
+
+      // رسم المتجر
+      function renderStore() {
+        emojiStore.innerHTML = "";
+        const points = parseInt(pointsSpan.textContent);
+
+        emojis.forEach(({ id, emoji, cost }) => {
+          const ownedEmoji = owned.includes(id);
+          const isActive = profileEmoji === id;
+
+          const btn = document.createElement("button");
+          btn.className = "emoji-btn";
+          btn.classList.add(ownedEmoji ? "owned" : "not-owned");
+          btn.textContent = `${emoji} ${ownedEmoji ? (isActive ? "✅ مستخدم" : "تعيين") : `شراء (${cost})`}`;
+
+          btn.addEventListener("click", async () => {
+            if (!ownedEmoji) {
+              if (points < cost) return alert("❌ لا توجد نقاط كافية");
+              owned.push(id);
+              await updateDoc(userRef, {
+                points: points - cost,
+                ownedEmojis: owned
+              });
+              pointsSpan.textContent = points - cost;
+            }
+
+            await updateDoc(userRef, { profileEmoji: id });
+            avatarImg.src = `https://emojicdn.elk.sh/${emoji}`;
+            profileEmoji = id;
+            renderStore();
+          });
+
+          emojiStore.appendChild(btn);
+        });
+      }
+
+      renderStore();
     });
   </script>
 </body>
