@@ -4,13 +4,80 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>الملف الشخصي</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      direction: rtl;
+      text-align: center;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    p {
+      font-size: 18px;
+      margin: 10px 0;
+    }
+
+    button {
+      padding: 12px 20px;
+      margin: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    #add-point {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    #add-point:hover {
+      background-color: #45a049;
+    }
+
+    #logout-btn {
+      background-color: #f44336;
+      color: white;
+    }
+
+    #logout-btn:hover {
+      background-color: #d32f2f;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      max-width: 400px;
+      margin: 20px auto;
+    }
+
+    img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin-bottom: 15px;
+    }
+  </style>
 </head>
 <body>
-  <h1>مرحبًا يا <span id="user-email"></span></h1>
-  <p>UID: <span id="user-uid"></span></p>
-  <p>نقاطك: <span id="user-points">0</span></p>
+  <div class="card">
+    <img id="user-avatar" src="" alt="الصورة الشخصية">
+    <h1>مرحبًا يا <span id="user-name">مستخدم</span></h1>
+    <p>البريد الإلكتروني: <span id="user-email"></span></p>
+    <p>UID: <span id="user-uid"></span></p>
+    <p>نقاطك: <span id="user-points">0</span></p>
 
-  <button id="add-point">اضغط هنا لكسب نقطة</button>
+    <button id="add-point">اضغط هنا لكسب نقطة</button>
+    <button id="logout-btn">تسجيل الخروج</button>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
@@ -29,17 +96,21 @@
     const db = getFirestore();
 
     const emailSpan = document.getElementById("user-email");
+    const nameSpan = document.getElementById("user-name");
     const uidSpan = document.getElementById("user-uid");
     const pointsSpan = document.getElementById("user-points");
+    const avatarImg = document.getElementById("user-avatar");
     const addPointBtn = document.getElementById("add-point");
+    const logoutBtn = document.getElementById("logout-btn");
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         emailSpan.textContent = user.email;
+        nameSpan.textContent = user.displayName || "مستخدم";
         uidSpan.textContent = user.uid;
+        avatarImg.src = user.photoURL || "https://via.placeholder.com/80";
 
         const userRef = doc(db, "users", user.uid);
-
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
@@ -50,15 +121,23 @@
         }
 
         addPointBtn.addEventListener("click", async () => {
-          // تحديث النقاط فورًا على الشاشة
           let currentPoints = parseInt(pointsSpan.textContent);
           pointsSpan.textContent = currentPoints + 1;
 
-          // تحديث النقاط في Firestore
           await updateDoc(userRef, {
             points: increment(1)
           });
         });
+
+        logoutBtn.addEventListener("click", async () => {
+          try {
+            await auth.signOut();
+            window.location.href = "index.html";
+          } catch (error) {
+            alert("حدث خطأ أثناء تسجيل الخروج: " + error.message);
+          }
+        });
+
       } else {
         window.location.href = "index.html";
       }
