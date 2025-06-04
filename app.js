@@ -23,7 +23,7 @@ googleSignInBtn.addEventListener("click", async () => {
       });
     }
 
-    window.location.href = "welcome.html";
+    window.location.href = "profile.html";
   } catch (error) {
     alert(error.message);
   }
